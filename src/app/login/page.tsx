@@ -19,21 +19,11 @@ export default function LoginPage() {
 
     const supabase = createClient()
 
-    // username으로 email 조회 후 로그인
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('username', username)
-      .single()
-
-    if (!profile?.email) {
-      setError('아이디 또는 비밀번호가 올바르지 않아요.')
-      setLoading(false)
-      return
-    }
+    // username → 내부 이메일 형식으로 변환해서 로그인
+    const internalEmail = `${username}@gaesin.app`
 
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: profile.email,
+      email: internalEmail,
       password,
     })
 

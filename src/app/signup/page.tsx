@@ -57,16 +57,29 @@ export default function SignupPage() {
       return
     }
 
-    // 이메일 생성 (username@gaesin.cbnu.kr 형태로 내부 처리)
-    const internalEmail = `${form.username}@gaesin-matching.internal`
+    // username 기반 내부 이메일 생성 (Supabase auth용)
+    const internalEmail = `${form.username}@gaesin.app`
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: internalEmail,
       password: form.password,
     })
 
-    if (authError || !authData.user) {
+    if (authError) {
+      setError(`회원가입에 실패했어요: ${authError.message}`)
+      setLoading(false)
+      return
+    }
+
+    if (!authData.user) {
       setError('회원가입에 실패했어요. 다시 시도해주세요.')
+      setLoading(false)
+      return
+    }
+
+    // 세션이 없으면 이메일 인증이 필요한 상태 (Supabase 대시보드에서 이메일 인증 비활성화 필요)
+    if (!authData.session) {
+      setError('이메일 인증이 필요합니다. Supabase 대시보드 → Authentication → Providers → Email → "Confirm email" 을 OFF로 설정해주세요.')
       setLoading(false)
       return
     }
@@ -81,7 +94,7 @@ export default function SignupPage() {
     })
 
     if (profileError) {
-      setError('프로필 생성에 실패했어요. 다시 시도해주세요.')
+      setError(`프로필 생성에 실패했어요: ${profileError.message}`)
       setLoading(false)
       return
     }
