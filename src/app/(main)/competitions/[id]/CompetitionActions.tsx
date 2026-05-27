@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
 
 export default function CompetitionActions({ recruitmentId }: { recruitmentId: string }) {
   const router = useRouter()
@@ -19,13 +20,8 @@ export default function CompetitionActions({ recruitmentId }: { recruitmentId: s
   }
 
   return (
-    <button
-      onClick={handleDelete}
-      disabled={loading}
-      className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors flex-shrink-0"
-      title="모집 삭제"
-    >
+    <Button variant="ghost" size="icon" onClick={handleDelete} disabled={loading} className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0">
       <Trash2 size={20} />
-    </button>
+    </Button>
   )
 }

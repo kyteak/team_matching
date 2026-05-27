@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
 
 export default function CompetitionApplyButton({ recruitmentId, userId }: { recruitmentId: string; userId: string }) {
   const router = useRouter()
@@ -15,24 +16,12 @@ export default function CompetitionApplyButton({ recruitmentId, userId }: { recr
     const supabase = createClient()
 
     const { error: applyError } = await supabase.from('competition_applications').insert({
-      recruitment_id: recruitmentId,
-      applicant_id: userId,
-      status: 'pending',
+      recruitment_id: recruitmentId, applicant_id: userId, status: 'pending',
     })
 
-    if (applyError) {
-      setError('지원에 실패했어요. 이미 지원했거나 오류가 발생했습니다.')
-      setLoading(false)
-      return
-    }
+    if (applyError) { setError('지원에 실패했어요. 이미 지원했거나 오류가 발생했습니다.'); setLoading(false); return }
 
-    // 모집자에게 알림
-    const { data: rec } = await supabase
-      .from('competition_recruitments')
-      .select('creator_id, team_name')
-      .eq('id', recruitmentId)
-      .single()
-
+    const { data: rec } = await supabase.from('competition_recruitments').select('creator_id, team_name').eq('id', recruitmentId).single()
     if (rec) {
       await supabase.from('notifications').insert({
         user_id: rec.creator_id,
@@ -48,10 +37,10 @@ export default function CompetitionApplyButton({ recruitmentId, userId }: { recr
 
   return (
     <div>
-      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-      <button className="btn-primary w-full" onClick={handleApply} disabled={loading}>
+      {error && <p className="text-destructive text-sm mb-3">{error}</p>}
+      <Button className="w-full" onClick={handleApply} disabled={loading}>
         {loading ? '지원 중...' : '이 팀에 지원하기 ✋'}
-      </button>
+      </Button>
     </div>
   )
 }

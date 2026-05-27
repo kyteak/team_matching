@@ -3,20 +3,19 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DEPARTMENTS } from '@/lib/departments'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 
 export default function SignupPage() {
   const router = useRouter()
-  const [form, setForm] = useState({
-    username: '',
-    password: '',
-    passwordConfirm: '',
-    name: '',
-    department: '',
-    studentId: '',
-    email: '',
-  })
+  const [form, setForm] = useState({ username: '', password: '', passwordConfirm: '', name: '', department: '', studentId: '', email: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -28,60 +27,24 @@ export default function SignupPage() {
     e.preventDefault()
     setError('')
 
-    if (form.password.length < 6) {
-      setError('비밀번호는 6자 이상이어야 해요.')
-      return
-    }
-    if (form.password !== form.passwordConfirm) {
-      setError('비밀번호가 일치하지 않아요.')
-      return
-    }
-    if (!form.department) {
-      setError('학과를 선택해주세요.')
-      return
-    }
+    if (form.password.length < 6) { setError('비밀번호는 6자 이상이어야 해요.'); return }
+    if (form.password !== form.passwordConfirm) { setError('비밀번호가 일치하지 않아요.'); return }
+    if (!form.department) { setError('학과를 선택해주세요.'); return }
 
     setLoading(true)
     const supabase = createClient()
 
-    // 아이디 중복 확인
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', form.username)
-      .single()
+    const { data: existing } = await supabase.from('profiles').select('id').eq('username', form.username).single()
+    if (existing) { setError('이미 사용 중인 아이디예요.'); setLoading(false); return }
 
-    if (existing) {
-      setError('이미 사용 중인 아이디예요.')
-      setLoading(false)
-      return
-    }
-
-    // username 기반 내부 이메일 생성 (Supabase auth용)
     const internalEmail = `${form.username}@gaesin.app`
+    const { data: authData, error: authError } = await supabase.auth.signUp({ email: internalEmail, password: form.password })
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: internalEmail,
-      password: form.password,
-    })
-
-    if (authError) {
-      setError(`회원가입에 실패했어요: ${authError.message}`)
-      setLoading(false)
-      return
-    }
-
-    if (!authData.user) {
-      setError('회원가입에 실패했어요. 다시 시도해주세요.')
-      setLoading(false)
-      return
-    }
-
-    // 세션이 없으면 이메일 인증이 필요한 상태 (Supabase 대시보드에서 이메일 인증 비활성화 필요)
+    if (authError) { setError(`회원가입 실패: ${authError.message}`); setLoading(false); return }
+    if (!authData.user) { setError('회원가입에 실패했어요.'); setLoading(false); return }
     if (!authData.session) {
-      setError('이메일 인증이 필요합니다. Supabase 대시보드 → Authentication → Providers → Email → "Confirm email" 을 OFF로 설정해주세요.')
-      setLoading(false)
-      return
+      setError('이메일 인증이 필요합니다. Supabase → Authentication → Providers → Email → "Confirm email" 을 OFF로 설정해주세요.')
+      setLoading(false); return
     }
 
     const { error: profileError } = await supabase.from('profiles').insert({
@@ -93,77 +56,82 @@ export default function SignupPage() {
       email: form.email || null,
     })
 
-    if (profileError) {
-      setError(`프로필 생성에 실패했어요: ${profileError.message}`)
-      setLoading(false)
-      return
-    }
+    if (profileError) { setError(`프로필 생성 실패: ${profileError.message}`); setLoading(false); return }
 
-    router.push('/')
-    router.refresh()
-    setLoading(false)
+    router.push('/'); router.refresh(); setLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 py-10">
-      <div className="card p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-blue-600">GaeSin-Matching</h1>
-          <p className="text-slate-500 text-sm mt-1">회원가입</p>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+            <Dumbbell size={24} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-primary">GaeSin-Matching</h1>
+          <p className="text-muted-foreground text-sm">충북대학교 팀 매칭 플랫폼</p>
         </div>
 
-        <form onSubmit={handleSignup} className="flex flex-col gap-4">
-          <div>
-            <label className="label">아이디 <span className="text-red-500">*</span></label>
-            <input className="input" type="text" placeholder="아이디 (영문, 숫자)" value={form.username} onChange={e => update('username', e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">비밀번호 <span className="text-red-500">*</span></label>
-            <input className="input" type="password" placeholder="6자 이상" value={form.password} onChange={e => update('password', e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">비밀번호 확인 <span className="text-red-500">*</span></label>
-            <input className="input" type="password" placeholder="비밀번호를 다시 입력하세요" value={form.passwordConfirm} onChange={e => update('passwordConfirm', e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">이름 <span className="text-red-500">*</span></label>
-            <input className="input" type="text" placeholder="실명을 입력하세요" value={form.name} onChange={e => update('name', e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">학과 <span className="text-red-500">*</span></label>
-            <select className="input" value={form.department} onChange={e => update('department', e.target.value)} required>
-              <option value="">학과를 선택하세요</option>
-              {DEPARTMENTS.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="border-t border-slate-100 pt-4">
-            <p className="text-xs text-slate-400 mb-3">선택 입력사항</p>
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="label">학번</label>
-                <input className="input" type="text" placeholder="학번 (선택)" value={form.studentId} onChange={e => update('studentId', e.target.value)} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">회원가입</CardTitle>
+            <CardDescription>충북대학교 학생만 가입할 수 있습니다</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSignup} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="username">아이디 <span className="text-destructive">*</span></Label>
+                <Input id="username" placeholder="영문, 숫자" value={form.username} onChange={e => update('username', e.target.value)} required />
               </div>
-              <div>
-                <label className="label">이메일</label>
-                <input className="input" type="email" placeholder="이메일 주소 (선택)" value={form.email} onChange={e => update('email', e.target.value)} />
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="password">비밀번호 <span className="text-destructive">*</span></Label>
+                <Input id="password" type="password" placeholder="6자 이상" value={form.password} onChange={e => update('password', e.target.value)} required />
               </div>
-            </div>
-          </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="passwordConfirm">비밀번호 확인 <span className="text-destructive">*</span></Label>
+                <Input id="passwordConfirm" type="password" placeholder="비밀번호를 다시 입력하세요" value={form.passwordConfirm} onChange={e => update('passwordConfirm', e.target.value)} required />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="name">이름 <span className="text-destructive">*</span></Label>
+                <Input id="name" placeholder="실명을 입력하세요" value={form.name} onChange={e => update('name', e.target.value)} required />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>학과 <span className="text-destructive">*</span></Label>
+                <Select onValueChange={v => update('department', v as string)}>
+                  <SelectTrigger><SelectValue placeholder="학과를 선택하세요" /></SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+              <Separator className="my-1" />
+              <p className="text-xs text-muted-foreground">선택 입력사항</p>
 
-          <button className="btn-primary w-full mt-2" type="submit" disabled={loading}>
-            {loading ? '가입 중...' : '회원가입'}
-          </button>
-        </form>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="studentId">학번</Label>
+                <Input id="studentId" placeholder="학번 (선택)" value={form.studentId} onChange={e => update('studentId', e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">이메일</Label>
+                <Input id="email" type="email" placeholder="이메일 주소 (선택)" value={form.email} onChange={e => update('email', e.target.value)} />
+              </div>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
-          이미 계정이 있으신가요?{' '}
-          <Link href="/login" className="text-blue-600 font-semibold hover:underline">로그인</Link>
-        </p>
+              {error && <p className="text-destructive text-sm">{error}</p>}
+              <Button type="submit" className="w-full mt-1" disabled={loading}>
+                {loading ? '가입 중...' : '회원가입'}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="justify-center">
+            <p className="text-sm text-muted-foreground">
+              이미 계정이 있으신가요?{' '}
+              <Link href="/login" className="text-primary font-semibold hover:underline">로그인</Link>
+            </p>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   )

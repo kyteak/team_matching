@@ -2,8 +2,17 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, User, LogOut } from 'lucide-react'
+import { Bell, User, LogOut, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 interface NavbarProps {
   unreadCount?: number
@@ -20,41 +29,39 @@ export default function Navbar({ unreadCount = 0 }: NavbarProps) {
   }
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <header className="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="text-lg font-bold text-blue-600">
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary">
+          <Dumbbell size={20} />
           GaeSin-Matching
         </Link>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/notifications"
-            className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
-            title="알림"
-          >
-            <Bell size={20} className="text-slate-600" />
+        <div className="flex items-center gap-1">
+          <Link href="/notifications" className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative')}>
+            <Bell size={19} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-destructive text-white text-[10px] rounded-full flex items-center justify-center font-bold">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </Link>
 
-          <Link
-            href="/profile"
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-            title="개인정보"
-          >
-            <User size={20} className="text-slate-600" />
-          </Link>
-
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-            title="로그아웃"
-          >
-            <LogOut size={20} className="text-slate-600" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button variant="ghost" size="icon">
+                <User size={19} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
+                <User size={15} className="mr-2" /> 개인정보
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                <LogOut size={15} className="mr-2" /> 로그아웃
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

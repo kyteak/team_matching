@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function SportApplyButton({ matchId, userId, userName }: { matchId: string; userId: string; userName: string }) {
   const router = useRouter()
@@ -11,10 +14,7 @@ export default function SportApplyButton({ matchId, userId, userName }: { matchI
   const [error, setError] = useState('')
 
   async function handleApply() {
-    if (!teamName.trim()) {
-      setError('우리 팀 이름을 입력해주세요.')
-      return
-    }
+    if (!teamName.trim()) { setError('우리 팀 이름을 입력해주세요.'); return }
     setLoading(true)
     setError('')
     const supabase = createClient()
@@ -25,16 +25,10 @@ export default function SportApplyButton({ matchId, userId, userName }: { matchI
       team_name: teamName,
     })
 
-    if (applyError) {
-      setError('신청에 실패했어요. 다시 시도해주세요.')
-      setLoading(false)
-      return
-    }
+    if (applyError) { setError('신청에 실패했어요. 다시 시도해주세요.'); setLoading(false); return }
 
-    // 매치 상태를 matched로 변경
     await supabase.from('sport_matches').update({ status: 'matched' }).eq('id', matchId)
 
-    // 매치 생성자에게 알림
     const { data: match } = await supabase.from('sport_matches').select('creator_id, team_name').eq('id', matchId).single()
     if (match) {
       await supabase.from('notifications').insert({
@@ -51,14 +45,14 @@ export default function SportApplyButton({ matchId, userId, userName }: { matchI
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <label className="label">우리 팀 이름</label>
-        <input className="input" type="text" placeholder="상대방에게 보여질 우리 팀 이름" value={teamName} onChange={e => setTeamName(e.target.value)} />
+      <div className="flex flex-col gap-2">
+        <Label>우리 팀 이름</Label>
+        <Input placeholder="상대방에게 보여질 우리 팀 이름" value={teamName} onChange={e => setTeamName(e.target.value)} />
       </div>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      <button className="btn-primary w-full" onClick={handleApply} disabled={loading}>
+      {error && <p className="text-destructive text-sm">{error}</p>}
+      <Button className="w-full" onClick={handleApply} disabled={loading}>
         {loading ? '신청 중...' : '매칭 신청하기 🤝'}
-      </button>
+      </Button>
     </div>
   )
 }
