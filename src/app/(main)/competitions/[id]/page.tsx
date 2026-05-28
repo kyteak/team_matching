@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import CompetitionApplyButton from './CompetitionApplyButton'
 import CompetitionActions from './CompetitionActions'
 import ApplicantList from './ApplicantList'
+import ChatButton from '@/components/ChatButton'
 
 export default async function CompetitionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -119,6 +120,14 @@ export default async function CompetitionDetailPage({ params }: { params: Promis
           <Card>
             <CardContent className="p-6 text-center text-muted-foreground text-sm">
               아직 지원자가 없어요. 조금만 기다려주세요! 👀
+            </CardContent>
+          </Card>
+        )}
+
+        {(isCreator || myApplication?.status === 'accepted') && (
+          <Card>
+            <CardContent className="p-4">
+              <ChatButton type="competition" referenceId={id} />
             </CardContent>
           </Card>
         )}

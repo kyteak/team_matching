@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import SportMatchActions from './SportMatchActions'
 import SportApplyButton from './SportApplyButton'
+import ChatButton from '@/components/ChatButton'
 
 const SPORT_EMOJI: Record<string, string> = {
   '축구': '⚽', '풋살': '⚽', '농구': '🏀', '테니스': '🎾', '배드민턴': '🏸'
@@ -109,6 +110,14 @@ export default async function SportMatchDetailPage({ params }: { params: Promise
               <div className="bg-primary/10 rounded-xl p-4 text-sm text-primary">
                 내가 만든 매치입니다.{!isMatched && !isToday(match.match_at) ? ' 삭제하려면 우측 상단 버튼을 눌러주세요.' : ''}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isMatched && (isCreator || !!myApplication) && (
+          <Card>
+            <CardContent className="p-4">
+              <ChatButton type="sport" referenceId={id} />
             </CardContent>
           </Card>
         )}
