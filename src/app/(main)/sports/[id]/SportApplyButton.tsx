@@ -27,8 +27,6 @@ export default function SportApplyButton({ matchId, userId, userName }: { matchI
 
     if (applyError) { setError('신청에 실패했어요. 다시 시도해주세요.'); setLoading(false); return }
 
-    await supabase.from('sport_matches').update({ status: 'matched' }).eq('id', matchId)
-
     const { data: match } = await supabase.from('sport_matches').select('creator_id, team_name').eq('id', matchId).single()
     if (match) {
       await supabase.from('notifications').insert({
