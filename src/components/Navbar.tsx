@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, User, LogOut, Dumbbell } from 'lucide-react'
+import { Bell, User, LogOut, Dumbbell, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -37,6 +37,10 @@ export default function Navbar({ unreadCount = 0 }: NavbarProps) {
         </Link>
 
         <div className="flex items-center gap-1">
+          <Link href="/friends" className={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+            <Users size={19} />
+          </Link>
+
           <Link href="/notifications" className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative')}>
             <Bell size={19} />
             {unreadCount > 0 && (

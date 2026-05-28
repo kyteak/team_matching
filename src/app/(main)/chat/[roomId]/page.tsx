@@ -27,6 +27,16 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
   } else if (room.type === 'competition') {
     const { data: rec } = await supabase.from('competition_recruitments').select('team_name').eq('id', room.reference_id).single()
     if (rec) roomTitle = rec.team_name
+  } else if (room.type === 'direct') {
+    const { data: friendship } = await supabase
+      .from('friendships')
+      .select('requester_id, addressee_id, requester:profiles!requester_id(name), addressee:profiles!addressee_id(name)')
+      .eq('id', room.reference_id)
+      .single()
+    if (friendship) {
+      const other = friendship.requester_id === user!.id ? friendship.addressee : friendship.requester
+      roomTitle = (other as any)?.name ?? '1:1 채팅'
+    }
   }
 
   return (
