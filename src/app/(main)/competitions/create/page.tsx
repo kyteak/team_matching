@@ -13,9 +13,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
+const REGIONS = ['전체', '충북', '충남', '대전', '세종', '전국']
+
 export default function CreateCompetitionRecruitmentPage() {
   const router = useRouter()
   const [competitions, setCompetitions] = useState<any[]>([])
+  const [regionFilter, setRegionFilter] = useState('전체')
   const [selectedComp, setSelectedComp] = useState('')
   const [teamName, setTeamName] = useState('')
   const [maxMembers, setMaxMembers] = useState('')
@@ -27,11 +30,19 @@ export default function CreateCompetitionRecruitmentPage() {
   useEffect(() => {
     async function fetchCompetitions() {
       const supabase = createClient()
-      const { data } = await supabase.from('competitions').select('*').gte('deadline', new Date().toISOString().split('T')[0]).order('deadline', { ascending: true })
+      const { data } = await supabase
+        .from('competitions')
+        .select('*')
+        .gte('deadline', new Date().toISOString().split('T')[0])
+        .order('deadline', { ascending: true })
       setCompetitions(data ?? [])
     }
     fetchCompetitions()
   }, [])
+
+  const filtered = regionFilter === '전체'
+    ? competitions
+    : competitions.filter(c => c.region === regionFilter)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -66,14 +77,28 @@ export default function CreateCompetitionRecruitmentPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <Label>공모전 선택 <span className="text-destructive">*</span></Label>
+              <div className="flex gap-1.5 flex-wrap mb-1">
+                {REGIONS.map(r => (
+                  <button key={r} type="button" onClick={() => { setRegionFilter(r); setSelectedComp('') }}
+                    className={cn('px-3 py-1 rounded-full text-xs font-medium border transition-all',
+                      regionFilter === r ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground hover:border-primary/50')}>
+                    {r}
+                  </button>
+                ))}
+              </div>
               {competitions.length === 0 ? (
                 <p className="text-muted-foreground text-sm">불러오는 중...</p>
+              ) : filtered.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center">{regionFilter} 지역 공모전이 없어요.</p>
               ) : (
                 <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                  {competitions.map(comp => (
+                  {filtered.map(comp => (
                     <button key={comp.id} type="button" onClick={() => setSelectedComp(comp.id)}
                       className={cn('p-3 rounded-xl border-2 text-left transition-all', selectedComp === comp.id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40')}>
-                      <p className={cn('font-medium text-sm', selectedComp === comp.id ? 'text-primary' : '')}>{comp.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={cn('font-medium text-sm', selectedComp === comp.id ? 'text-primary' : '')}>{comp.title}</p>
+                        {comp.region && <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{comp.region}</span>}
+                      </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{comp.host} · 마감 {formatDateOnly(comp.deadline)}</p>
                       {comp.prize && <p className="text-xs text-green-600 mt-0.5">🏆 {comp.prize}</p>}
                     </button>
