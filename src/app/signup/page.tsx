@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Dumbbell } from 'lucide-react'
+import { Dumbbell, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DEPARTMENTS } from '@/lib/departments'
 import { Button } from '@/components/ui/button'
@@ -19,8 +19,50 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [sendingCode, setSendingCode] = useState(false)
+  const [codeSent, setCodeSent] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [verifyingCode, setVerifyingCode] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [codeError, setCodeError] = useState('')
+
   function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
+    if (field === 'email') {
+      setEmailVerified(false)
+      setCodeSent(false)
+      setVerificationCode('')
+      setCodeError('')
+    }
+  }
+
+  async function sendVerification() {
+    setCodeError('')
+    setSendingCode(true)
+    const res = await fetch('/api/send-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email }),
+    })
+    const data = await res.json()
+    setSendingCode(false)
+    if (!res.ok) { setCodeError(data.error); return }
+    setCodeSent(true)
+  }
+
+  async function verifyCode() {
+    setCodeError('')
+    setVerifyingCode(true)
+    const res = await fetch('/api/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email, code: verificationCode }),
+    })
+    const data = await res.json()
+    setVerifyingCode(false)
+    if (!res.ok) { setCodeError(data.error); return }
+    setEmailVerified(true)
+    setCodeError('')
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -30,6 +72,7 @@ export default function SignupPage() {
     if (form.password.length < 6) { setError('비밀번호는 6자 이상이어야 해요.'); return }
     if (form.password !== form.passwordConfirm) { setError('비밀번호가 일치하지 않아요.'); return }
     if (!form.department) { setError('학과를 선택해주세요.'); return }
+    if (!emailVerified) { setError('학교 이메일 인증을 완료해주세요.'); return }
 
     setLoading(true)
     const supabase = createClient()
@@ -53,7 +96,7 @@ export default function SignupPage() {
       name: form.name,
       department: form.department,
       student_id: form.studentId || null,
-      email: form.email || null,
+      email: form.email,
     })
 
     if (profileError) { setError(`프로필 생성 실패: ${profileError.message}`); setLoading(false); return }
@@ -107,6 +150,53 @@ export default function SignupPage() {
                 </Select>
               </div>
 
+              {/* 학교 이메일 인증 */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">학교 이메일 <span className="text-destructive">*</span></Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="학번@chungbuk.ac.kr"
+                    value={form.email}
+                    onChange={e => update('email', e.target.value)}
+                    disabled={emailVerified}
+                    className="flex-1"
+                  />
+                  {!emailVerified && (
+                    <Button type="button" variant="outline" onClick={sendVerification} disabled={sendingCode || !form.email} className="shrink-0">
+                      {sendingCode ? '전송 중...' : codeSent ? '재전송' : '인증코드 전송'}
+                    </Button>
+                  )}
+                </div>
+
+                {codeSent && !emailVerified && (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="6자리 코드 입력"
+                      value={verificationCode}
+                      onChange={e => setVerificationCode(e.target.value)}
+                      maxLength={6}
+                      className="flex-1"
+                    />
+                    <Button type="button" variant="outline" onClick={verifyCode} disabled={verifyingCode || verificationCode.length < 6} className="shrink-0">
+                      {verifyingCode ? '확인 중...' : '확인'}
+                    </Button>
+                  </div>
+                )}
+
+                {emailVerified && (
+                  <div className="flex items-center gap-1.5 text-green-500 text-sm">
+                    <CheckCircle size={15} />
+                    이메일 인증 완료
+                  </div>
+                )}
+                {codeError && <p className="text-destructive text-sm">{codeError}</p>}
+                {codeSent && !emailVerified && !codeError && (
+                  <p className="text-muted-foreground text-xs">코드가 전송되었어요. 스팸함도 확인해보세요. (10분 유효)</p>
+                )}
+              </div>
+
               <Separator className="my-1" />
               <p className="text-xs text-muted-foreground">선택 입력사항</p>
 
@@ -114,13 +204,9 @@ export default function SignupPage() {
                 <Label htmlFor="studentId">학번</Label>
                 <Input id="studentId" placeholder="학번 (선택)" value={form.studentId} onChange={e => update('studentId', e.target.value)} />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">이메일</Label>
-                <Input id="email" type="email" placeholder="이메일 주소 (선택)" value={form.email} onChange={e => update('email', e.target.value)} />
-              </div>
 
               {error && <p className="text-destructive text-sm">{error}</p>}
-              <Button type="submit" className="w-full mt-1" disabled={loading}>
+              <Button type="submit" className="w-full mt-1" disabled={loading || !emailVerified}>
                 {loading ? '가입 중...' : '회원가입'}
               </Button>
             </form>
